@@ -1,0 +1,104 @@
+services:
+  db:
+    image: postgres:13
+    env_file:
+      - ./env_files/postgres.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+    networks:
+      - kafka_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 2181 || exit -1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    ports:
+      - 22181:2181
+    networks:
+      - kafka_network
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - 29092:29092
+    networks:
+      - kafka_network
+
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    environment:
+      - TZ=Europe/Madrid    
+    volumes:
+      - ./mqtt/mosquitto/config:/mosquitto/config
+      - ./mqtt/mosquitto/data:/mosquitto/data
+      - ./mqtt/mosquitto/log:/mosquitto/log
+    ports:
+      - 1883:1883
+      - 9001:9001
+    restart: unless-stopped
+    networks:
+      - kafka_network
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "healthcheck", "-m", "test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  kafka_producer:
+    build:
+      context: .
+      dockerfile: ./kafka/Dockerfile.producer
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    env_file:
+      - ./env_files/kafka_producer.env
+      - ./env_files/topics.env
+    networks:
+      - kafka_network
+
+  kafka_consumer:
+    build:
+      context: .
+      dockerfile: ./kafka/Dockerfile.consumer
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    env_file:
+      - ./env_files/postgres.env
+      - ./env_files/kafka_consumer.env
+      - ./env_files/topics.env
+    networks:
+      - kafka_network
+
+networks:
+  kafka_network:
+    driver: bridge
