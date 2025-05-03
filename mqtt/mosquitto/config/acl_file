@@ -1,0 +1,21 @@
+#anonymous access
+topic readwrite /health_status
+
+
+#user based access
+
+user sensor
+topic write /sensor/oxygen
+topic write /sensor/heart_frequency
+topic write /sensor/temperature
+
+user kafka
+topic read /sensor/oxygen
+topic read /sensor/heart_frequency
+topic read /sensor/temperature
+
+user read_all
+topic read /#
+
+user temperature_sensor
+topic write /test

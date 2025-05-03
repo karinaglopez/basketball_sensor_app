@@ -53,17 +53,19 @@ services:
     environment:
       - TZ=Europe/Madrid    
     volumes:
-      - ./mqtt/mosquitto/config:/mosquitto/config
-      - ./mqtt/mosquitto/data:/mosquitto/data
+      - ./mqtt/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mqtt/mosquitto/config/acl_file:/mosquitto/config/acl_file:ro
+      - ./mqtt/mosquitto/config/password_file:/mosquitto/config/password_file:rw
+      - ./certs:/mosquitto/config/certs 
       - ./mqtt/mosquitto/log:/mosquitto/log
     ports:
       - 1883:1883
-      - 9001:9001
+      - 8883:8883
     restart: unless-stopped
     networks:
       - kafka_network
     healthcheck:
-      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "healthcheck", "-m", "test"]
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "/health_status", "-m", "test", "--cafile", "/mosquitto/config/certs/ca.crt"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -78,8 +80,10 @@ services:
       mosquitto:
         condition: service_healthy
     env_file:
-      - ./env_files/kafka_producer.env
-      - ./env_files/topics.env
+      - ./env_files/kafka.env
+      - ./env_files/mqtt.env
+    volumes:
+      - ./certs/ca.crt:/app/certs/ca.crt:ro # Mount the CA certificate
     networks:
       - kafka_network
 
@@ -94,8 +98,7 @@ services:
         condition: service_healthy
     env_file:
       - ./env_files/postgres.env
-      - ./env_files/kafka_consumer.env
-      - ./env_files/topics.env
+      - ./env_files/kafka.env
     networks:
       - kafka_network
 
