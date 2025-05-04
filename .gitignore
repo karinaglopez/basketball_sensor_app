@@ -26,7 +26,8 @@ yarn-debug.log*
 yarn-error.log*
 
 postgres/data/
-mqtt/mosquitto/data/
-mqtt/mosquitto/log/
+mqtt/data/
+mqtt/log/
 dashboard
 notes.md
+/arduino_unfinished

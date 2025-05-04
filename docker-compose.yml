@@ -36,7 +36,7 @@ services:
       zookeeper:
         condition: service_healthy
     env_file:
-      - ./.env
+      - ./env_files/kafka_zookeper.env
     healthcheck:
       test: nc -z localhost 9092 || exit -1
       interval: 30s
@@ -53,11 +53,11 @@ services:
     environment:
       - TZ=Europe/Madrid    
     volumes:
-      - ./mqtt/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-      - ./mqtt/mosquitto/config/acl_file:/mosquitto/config/acl_file:ro
-      - ./mqtt/mosquitto/config/password_file:/mosquitto/config/password_file:rw
+      - ./mqtt/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mqtt/config/acl_file:/mosquitto/config/acl_file:ro
+      - ./mqtt/config/password_file:/mosquitto/config/password_file:rw
       - ./certs:/mosquitto/config/certs 
-      - ./mqtt/mosquitto/log:/mosquitto/log
+      - ./mqtt/log:/mosquitto/log
     ports:
       - 1883:1883
       - 8883:8883
@@ -73,7 +73,7 @@ services:
   kafka_producer:
     build:
       context: .
-      dockerfile: ./kafka/Dockerfile.producer
+      dockerfile: ./kafka_producer/Dockerfile
     depends_on:
       kafka:
         condition: service_healthy
@@ -83,14 +83,14 @@ services:
       - ./env_files/kafka.env
       - ./env_files/mqtt.env
     volumes:
-      - ./certs/ca.crt:/app/certs/ca.crt:ro # Mount the CA certificate
+      - ./certs/ca.crt:/app/certs/ca.crt:ro 
     networks:
       - kafka_network
 
   kafka_consumer:
     build:
       context: .
-      dockerfile: ./kafka/Dockerfile.consumer
+      dockerfile: ./kafka_consumer/Dockerfile
     depends_on:
       kafka:
         condition: service_healthy

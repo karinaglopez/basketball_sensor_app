@@ -35,7 +35,7 @@ class Oxygen(Base):
     is_valid = Column(Boolean)
     registered_at = Column(DateTime) 
 
-class HeartRate(Base):
+class Heartfrequency(Base):
     __tablename__ = 'heart_frequency'
     id = Column(BIGINT, primary_key=True, autoincrement=True)
     sensor_id = Column(String)
@@ -77,18 +77,18 @@ def handle_oxygen(data):
     except Exception as e:
         logging.error(f"Failed to handle oxygen data: {e}")
 
-def handle_heart_rate(data):
+def handle_heart_frequency(data):
     try:
         parsed_data = json.loads(data)
-        heart_rate = HeartRate(
+        heart_frequency = Heartfrequency(
             sensor_id=parsed_data["sensor"],
             value=parsed_data["value"],
             is_valid=bool(parsed_data["isValid"]),
             registered_at=datetime.fromtimestamp(parsed_data["timestamp"], tz=timezone.utc) 
         )
-        session.add(heart_rate)
+        session.add(heart_frequency)
         session.commit()
-        logging.info(f"Heart rate data saved: {str(heart_rate)}")
+        logging.info(f"Heart rate data saved: {str(heart_frequency)}")
     except Exception as e:
         logging.error(f"Failed to handle heart rate data: {e}")
 
@@ -112,7 +112,7 @@ def main():
         if msg is None:
             continue
         if msg.error():
-            logging.info('Error: {}'.format(msg.error()))
+            logging.error('Error: {}'.format(msg.error()))
             continue
         data = msg.value().decode('utf-8')
         topic = msg.topic()
@@ -120,7 +120,7 @@ def main():
         if topic == oxygen_kafka_topic:
             handle_oxygen(data)
         elif topic == heart_frequency_kafka_topic:
-            handle_heart_rate(data)
+            handle_heart_frequency(data)
         elif topic == temperature_kafka_topic:
             handle_temperature(data)
         else:

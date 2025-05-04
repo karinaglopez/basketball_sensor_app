@@ -44,11 +44,15 @@ p = Producer(kafka_config)
 def create_kafka_topic(topic_name, num_partitions=num_sensors, replication_factor=1):
     admin_client = AdminClient({'bootstrap.servers': kafka_url})
     topic = NewTopic(topic_name, num_partitions=num_partitions, replication_factor=replication_factor)
-    try:
-        admin_client.create_topics([topic])
-        logging.info(f"Topic '{topic_name}' created with {num_partitions} partitions.")
-    except Exception as e:
-        logging.warning(f"Topic '{topic_name}' already exists or failed to create: {e}")
+
+    fs = admin_client.create_topics([topic])
+
+    for topic, f in fs.items():
+        try:
+            f.result()  # Block until the topic creation has succeeded or failed
+            logging.info(f"Topic '{topic}' created with {num_partitions} partitions.")
+        except Exception as e:
+            logging.warning(f"Topic '{topic}' already exists or failed to create: {e}")
 
 create_kafka_topic(oxygen_kafka_topic, num_partitions=num_sensors)
 create_kafka_topic(heart_frequency_kafka_topic, num_partitions=num_sensors)
@@ -100,8 +104,6 @@ mqttc.tls_set(ca_certs=ca_cert, cert_reqs=ssl.CERT_REQUIRED,
 mqttc.enable_logger()
 mqttc.on_connect = on_connect
 mqttc.on_message = on_message
-#mqttc.on_subscribe = on_subscribe
-#mqttc.on_unsubscribe = on_unsubscribe
 
 mqttc.user_data_set([])
 logging.info(f"Connecting to MQTT broker at {mqtt_broker}:{mqtt_port}")
