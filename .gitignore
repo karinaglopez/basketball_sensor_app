@@ -11,7 +11,12 @@ venv
 /build
 /env_files
 /certs
-/arduino
+postgres/data/
+mqtt/data/
+mqtt/log/
+dashboard
+notes.md
+/arduino_unfinished
 
 # misc
 .DS_Store
@@ -24,10 +29,3 @@ __pycache__
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-postgres/data/
-mqtt/data/
-mqtt/log/
-dashboard
-notes.md
-/arduino_unfinished
